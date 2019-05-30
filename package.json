@@ -1,0 +1,24 @@
+{
+  "name": "test-event-factory",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brightspace/test-event-factory.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Brightspace/test-event-factory/issues"
+  },
+  "homepage": "https://github.com/Brightspace/test-event-factory#readme",
+  "dependencies": {
+    "chai": "^4.2.0",
+    "uuid": "^3.3.2"
+  }
+}
