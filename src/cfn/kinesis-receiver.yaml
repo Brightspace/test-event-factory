@@ -8,7 +8,6 @@ Description: >
 Parameters:
   BrightspaceAccountId:
     Type: String
-    MinLength: 1
     Description: >
       The identifier of the account that will
       publish messages *to* the Amazon Kinesis Data Stream
@@ -16,7 +15,10 @@ Parameters:
     Type: Number
     Default: 24
     Description: >
-      The number of hours for the data records that are stored in shards to remain accessible. The default value is 24. For more information about the stream retention period, see Changing the Data Retention Period in the Amazon Kinesis Developer Guide.
+      The number of hours for the data records that are stored in shards to 
+      remain accessible. The default value is 24. For more information 
+      about the stream retention period, see Changing the Data Retention 
+      Period in the Amazon Kinesis Developer Guide.
       See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
   ShardCount:
     Type: Number
@@ -39,7 +41,7 @@ Conditions:
   HasEncryption: !Not [!Equals ["", !Ref StreamEncryptionKeyId]]
 
 Resources:
-  EventStream:
+  KinesisStream:
     Type: AWS::Kinesis::Stream
     Properties:
       RetentionPeriodHours: !Ref RetentionPeriodHours
@@ -50,7 +52,7 @@ Resources:
           - { EncryptionType: "KMS",
               KeyId: !Ref StreamEncryptionKeyId}
           - !Ref "AWS::NoValue"
-  KinesisWriterRole:
+  IamRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -66,19 +68,19 @@ Resources:
           Version: 2012-10-17
           Statement:
           - Effect: Allow
-            Resource: !GetAtt EventStream.Arn
+            Resource: !GetAtt KinesisStream.Arn
             Action:
             - "kinesis:PutRecord"
             - "kinesis:PutRecords"
 
 Outputs:
-  KinesisWriterRoleArn:
+  IamRoleArn:
     Description: >
       The ARN of the Amazon IAM Role that the lambda will assume
       to write events to a customer Amazon Kinesis Data Stream.
-    Value: !GetAtt KinesisWriterRole.Arn
-  EventStreamArn:
+    Value: !GetAtt IamRole.Arn
+  KinesisStreamArn:
     Description: >
       The identifier of the Amazon Kinesis Data Stream that Brightspace
       events will be written to.
-    Value: !GetAtt EventStream.Arn
+    Value: !GetAtt KinesisStream.Arn
