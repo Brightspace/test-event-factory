@@ -2,7 +2,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
   Sample template for deploying an Amazon Kinesis Data Stream
   with a role that another account can assume to 
-  write to the stream. 
+  write to the stream. Optionally add encryption by specifying
+  an AWS Key Management System encryption key.
 
 Parameters:
   BrightspaceAccountId:
@@ -25,6 +26,16 @@ Parameters:
     Description: >
       The number of shards that the stream uses. For greater provisioned throughput, increase the number of shards.
       See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+  StreamEncryptionKeyId:
+    Type: String
+    Default: ""
+    Description: >
+      The GUID for the customer-managed AWS KMS key to use for encryption.
+      This value must be exactly the Guid, in order for Brightspace to write to the shard. 
+      See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+
+Conditions:
+  HasEncryption: !Not [!Equals ["", !Ref StreamEncryptionKeyId]]
 
 Resources:
   KinesisStream:
@@ -32,6 +43,12 @@ Resources:
     Properties:
       RetentionPeriodHours: !Ref RetentionPeriodHours
       ShardCount: !Ref ShardCount
+      StreamEncryption: 
+        !If 
+          - HasEncryption
+          - { EncryptionType: "KMS",
+              KeyId: !Ref StreamEncryptionKeyId }
+          - !Ref "AWS::NoValue"
   IamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -52,6 +69,16 @@ Resources:
               Action:
               - "kinesis:PutRecord"
               - "kinesis:PutRecords"
+        - !If
+            - HasEncryption
+            - PolicyName: encryptionPolicy
+              PolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                - Effect: Allow
+                  Action: "kms:GenerateDataKey"
+                  Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${StreamEncryptionKeyId}"
+            - !Ref "AWS::NoValue"
 
 Outputs:
   IamRoleArn:
