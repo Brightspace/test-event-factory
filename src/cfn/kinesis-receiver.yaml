@@ -1,33 +1,55 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >
-  This template contains the definition of a kinesis data stream along with a role that has permission to write to that stream. It takes in an AWS account Id as a parameter that defines which account will have permissions to assume this role. The outputs that this template generates are used by the serverless template to give permissions to the lambda.
-
-
-Outputs:
-  KinesisWriterRoleArn:
-    Description: >
-      The ARN of the role that the lambda will assume
-      to write events to a customer kinesis stream.
-    Value: !GetAtt KinesisWriterRole.Arn
-  EventStreamArn:
-    Description: >
-      The identifier of the stream that Brightspace
-      events will be written to.
-    Value: !GetAtt EventStream.Arn
+  Sample template for deploying a kinesis data stream 
+  with a role that another account can assume to 
+  write to the stream. Optionally add encryption by specifying
+  an AWS Key Management System encryption key.
 
 Parameters:
   BrightspaceAccountId:
     Type: String
+    MinLength: 1
     Description: >
       The identifier of the account that will
-      publish messages to the kinesis stream
+      publish messages *to* the kinesis stream
+  RetentionPeriodHours:
+    Type: Number
+    Default: 24
+    Description: >
+      The number of hours for the data records that are stored in shards to remain accessible. The default value is 24. For more information about the stream retention period, see Changing the Data Retention Period in the Amazon Kinesis Developer Guide.
+      See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+  ShardCount:
+    Type: Number
+    Default: 1
+    Description: >
+      The number of shards that the stream uses. For greater provisioned throughput, increase the number of shards.
+      See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+  StreamEncryptionKeyId:
+    Type: String
+    Default: ""
+    Description: >
+      The GUID for the customer-managed AWS KMS key to use for encryption.
+      This value can be a globally unique identifier, a fully specified 
+      Amazon Resource Name (ARN) to either an alias or a key, or an alias 
+      name prefixed by "alias/".You can also use a master key owned by 
+      Kinesis Data Streams by specifying the alias aws/kinesis.
+      See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+
+Conditions:
+  HasEncryption: !Not [!Equals ["", !Ref StreamEncryptionKeyId]]
+
 Resources:
   EventStream:
     Type: AWS::Kinesis::Stream
     Properties:
-      Name: EventStream
-      RetentionPeriodHours: 24
-      ShardCount: 1
+      RetentionPeriodHours: !Ref RetentionPeriodHours
+      ShardCount: !Ref ShardCount
+      StreamEncryption: 
+        !If 
+          - HasEncryption
+          - { EncryptionType: "KMS",
+              KeyId: !Ref StreamEncryptionKeyId}
+          - !Ref "AWS::NoValue"
   KinesisWriterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -46,5 +68,17 @@ Resources:
           - Effect: Allow
             Resource: !GetAtt EventStream.Arn
             Action:
-            - kinesis:PutRecord
-            - kinesis:PutRecords
+            - "kinesis:PutRecord"
+            - "kinesis:PutRecords"
+
+Outputs:
+  KinesisWriterRoleArn:
+    Description: >
+      The ARN of the role that the lambda will assume
+      to write events to a customer kinesis stream.
+    Value: !GetAtt KinesisWriterRole.Arn
+  EventStreamArn:
+    Description: >
+      The identifier of the stream that Brightspace
+      events will be written to.
+    Value: !GetAtt EventStream.Arn
