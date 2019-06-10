@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  This template contains the definition of a kinesis data stream along with a role that has permission to write to that stream. It takes in an AWS account Id as a parameter that defines which account will have permissions to assume this role. The outputs that this template generates are used by the serverless template to give permissions to the lambda.
+
+
+Outputs:
+  KinesisWriterRoleArn:
+    Description: >
+      The ARN of the role that the lambda will assume
+      to write events to a customer kinesis stream.
+    Value: !GetAtt KinesisWriterRole.Arn
+  EventStreamArn:
+    Description: >
+      The identifier of the stream that Brightspace
+      events will be written to.
+    Value: !GetAtt EventStream.Arn
+
+Parameters:
+  BrightspaceAccountId:
+    Type: String
+    Description: >
+      The identifier of the account that will
+      publish messages to the kinesis stream
+Resources:
+  EventStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: EventStream
+      RetentionPeriodHours: 24
+      ShardCount: 1
+  KinesisWriterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Ref BrightspaceAccountId
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Resource: !GetAtt EventStream.Arn
+            Action:
+            - kinesis:PutRecord
+            - kinesis:PutRecords
