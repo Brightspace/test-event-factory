@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >
-  Sample template for deploying a kinesis data stream 
+  Sample template for deploying an Amazon Kinesis Data Stream
   with a role that another account can assume to 
   write to the stream. Optionally add encryption by specifying
   an AWS Key Management System encryption key.
@@ -11,7 +11,7 @@ Parameters:
     MinLength: 1
     Description: >
       The identifier of the account that will
-      publish messages *to* the kinesis stream
+      publish messages *to* the Amazon Kinesis Data Stream
   RetentionPeriodHours:
     Type: Number
     Default: 24
@@ -32,7 +32,7 @@ Parameters:
       This value can be a globally unique identifier, a fully specified 
       Amazon Resource Name (ARN) to either an alias or a key, or an alias 
       name prefixed by "alias/".You can also use a master key owned by 
-      Kinesis Data Streams by specifying the alias aws/kinesis.
+      Amazon Kinesis Data Streams by specifying the alias aws/kinesis.
       See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
 
 Conditions:
@@ -74,11 +74,11 @@ Resources:
 Outputs:
   KinesisWriterRoleArn:
     Description: >
-      The ARN of the role that the lambda will assume
-      to write events to a customer kinesis stream.
+      The ARN of the Amazon IAM Role that the lambda will assume
+      to write events to a customer Amazon Kinesis Data Stream.
     Value: !GetAtt KinesisWriterRole.Arn
   EventStreamArn:
     Description: >
-      The identifier of the stream that Brightspace
+      The identifier of the Amazon Kinesis Data Stream that Brightspace
       events will be written to.
     Value: !GetAtt EventStream.Arn
