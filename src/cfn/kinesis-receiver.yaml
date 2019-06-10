@@ -31,10 +31,7 @@ Parameters:
     Default: ""
     Description: >
       The GUID for the customer-managed AWS KMS key to use for encryption.
-      This value can be a globally unique identifier, a fully specified 
-      Amazon Resource Name (ARN) to either an alias or a key, or an alias 
-      name prefixed by "alias/".You can also use a master key owned by 
-      Amazon Kinesis Data Streams by specifying the alias aws/kinesis.
+      This value must be exactly the Guid, in order for Brightspace to write to the shard. 
       See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
 
 Conditions:
@@ -50,7 +47,7 @@ Resources:
         !If 
           - HasEncryption
           - { EncryptionType: "KMS",
-              KeyId: !Ref StreamEncryptionKeyId}
+              KeyId: !Ref StreamEncryptionKeyId }
           - !Ref "AWS::NoValue"
   IamRole:
     Type: AWS::IAM::Role
@@ -63,15 +60,25 @@ Resources:
             AWS: !Ref BrightspaceAccountId
           Action: "sts:AssumeRole"
       Policies:
-      - PolicyName: policy
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Resource: !GetAtt KinesisStream.Arn
-            Action:
-            - "kinesis:PutRecord"
-            - "kinesis:PutRecords"
+        - PolicyName: streamWriterPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Resource: !GetAtt KinesisStream.Arn
+              Action:
+              - "kinesis:PutRecord"
+              - "kinesis:PutRecords"
+        - !If
+            - HasEncryption
+            - PolicyName: encryptionPolicy
+              PolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                - Effect: Allow
+                  Action: "kms:GenerateDataKey"
+                  Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${StreamEncryptionKeyId}"
+            - !Ref "AWS::NoValue"
 
 Outputs:
   IamRoleArn:
@@ -79,8 +86,8 @@ Outputs:
       The ARN of the Amazon IAM Role that the lambda will assume
       to write events to a customer Amazon Kinesis Data Stream.
     Value: !GetAtt IamRole.Arn
-  KinesisStreamArn:
+  KinesisStreamName:
     Description: >
       The identifier of the Amazon Kinesis Data Stream that Brightspace
       events will be written to.
-    Value: !GetAtt KinesisStream.Arn
+    Value: !Ref KinesisStream
