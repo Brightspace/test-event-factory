@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Brightspace/test-event-factory#readme",
   "dependencies": {
-    "aws-sdk": "^2.466.0",
+    "aws-sdk": "^2.1354.0",
     "chai": "^4.2.0",
     "highland": "^2.13.4",
     "uuid": "^3.3.2"
